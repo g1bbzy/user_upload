@@ -7,7 +7,19 @@ $u = "";
 $p = "";
 $h = "";
 $users = [];
+$dbconnection = false;
 
+$help = "
+User Upload Help
+This is script is used to upload users from a csv file to a mysql database.
+Supported Commands:
+--file -
+--dry_run -
+--creat_table -
+-u -
+-p - 
+-h -
+";
 // Loop through Args. Start at position 1 because position 0 is location/name of php file.
 if(count($argv) > 1){
 	for ($i=1; $i < count($argv); $i++) { 
@@ -37,28 +49,52 @@ if(count($argv) > 1){
 			if (isset($argv[$i+1])) {
 				$h = $argv[$i+1];
 			}
-		}	
+		}
+		else if ($argv[$i] == "--help"){
+			//no need to continue with the script.
+			fwrite(STDOUT, $help);
+			die();
+		}		
 	}
 }
 else
 {
+	// no arguments were provided
 	fwrite(STDOUT, "Please provide appropriate arguments\n");
 }
-
-try {
-	// check if $csv contains a file.
-	if ($csv_file){
-		$file = fopen($csv_file, 'r');
-		while (($line = fgetcsv($file)) !== FALSE) {
-			array_push ($users, $line);
-		}
-		fclose($file);
+// check if credentials and db host were proveded
+if($u && $p && $h){
+	// Create connection
+	$conn = mysqli_connect($h, $u, $p);
+	// Check connection
+	if (!$conn) {
+	    die("Connection failed: " . mysqli_connect_error());
 	}
-} 
-catch (Exception $e) {
-        die("csv file could not be opened, please check the file or file location.");
+	echo "Connected to database";
+	$dbconnection = true;
 }
-var_dump($users);
 
 
+// check if $csv contains a file.
+if ($csv_file){
+	// surround opening CSV file in a try catch incase an error occurs.
+	try{
+		$file = fopen($csv_file, 'r');
+		if ($file){
+			while (($line = fgetcsv($file)) !== FALSE) {
+				array_push ($users, $line);
+			}
+			fclose($file);
+		}
+	}
+	catch(Exception $e){
+		print("An error occured opening the csv file. Please the check file or the file location.");
+	}
+	
+}
+// Check if users contains any data
+if($users){
+	//loop through users array
+	var_dump($users);
+}
 ?>
