@@ -144,8 +144,8 @@ if(!$csv_file){
 	die();
 }
 
-// check if $csv contains a file.
-if ($csv_file){
+// check if $csv file given is of type csv.
+if (strpos($csv_file, '.csv') !== false){
 	// surround opening CSV file in a try catch incase an error occurs.
 	try{
 		$file = fopen($csv_file, 'r');
@@ -164,6 +164,10 @@ if ($csv_file){
 		die();
 	}
 	
+}
+else
+{
+	fwrite(STDOUT, "Please provide a file that is of the type csv\n");	
 }
 // Check if dry run was stated.
 if ($dry_run){
