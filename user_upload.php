@@ -60,11 +60,6 @@ if(count($argv) > 1){
 				$h = $argv[$i+1];
 			}
 		}
-		else if ($argv[$i] == "-db"){
-			if (isset($argv[$i+1])) {
-				$db = $argv[$i+1];
-			}
-		}
 		else if ($argv[$i] == "--help"){
 			//no need to continue with the script. Output help then die.
 			fwrite(STDOUT, $help);
@@ -154,8 +149,10 @@ if ($csv_file){
 	// surround opening CSV file in a try catch incase an error occurs.
 	try{
 		$file = fopen($csv_file, 'r');
+		// if $file was opened successfully
 		if ($file){
 			while (($line = fgetcsv($file)) !== FALSE) {
+				//push each line of csv file into $users array
 				array_push ($users, $line);
 			}
 			fclose($file);
