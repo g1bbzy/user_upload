@@ -6,7 +6,6 @@ $dry_run = false;
 $u = "";
 $p = "";
 $h = "";
-$db = "";
 $users = [];
 
 // --help output
@@ -23,7 +22,7 @@ Command line options:
 --dry_run - Used to execute this script but not insert users into the database.
 
 --create_table - This option is creates the users table. If table already exists it will drop the table
-and recreate it.
+and recreate it (no further action will take place).
 
 -u - Username for database connection.
 
@@ -101,39 +100,51 @@ if($u && $p && $h){
 	    die("Connection failed: " . mysqli_connect_error());
 	}
 	echo "**** Connected to database ****\n\n";
-
+	//check if create table option was provided
 	if ($create_table){
+		// Check if users table already exists
 		$val = mysqli_query($conn,"select 1 from `users` LIMIT 1");
+		// if table exists
 		if($val !== FALSE)
 		{
+			// Query to create table
 			$creat_table_sql = "CREATE TABLE users (id INT(6) UNSIGNED AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255) NOT NULL, surname VARCHAR(255) NOT NULL, email VARCHAR(255) NOT NULL UNIQUE);";
-			if (mysqli_query($conn, "DROP TABLE IF EXISTS ".$db.".users;")) {
+			//Drop table as it already exists
+			if (mysqli_query($conn, "DROP TABLE IF EXISTS danielgibbs.users;")) {
 			    fwrite(STDOUT, "users table has been dropped\n");
 			} else {
 			    echo "Error: Could not drop table:\n".mysqli_error($conn). "\n";
+			    die();
 			}
+			// create table again
 			if (mysqli_query($conn, $creat_table_sql)) {
 			    fwrite(STDOUT, "users table created successfully\n");
+			    die();
 			} else {
 			    echo "Error: Could not create table:\n".mysqli_error($conn). "\n";
 			}
 		}
 		else
 		{
+			// table does not exists so create it
 		    $creat_table_sql = "CREATE TABLE users (id INT(6) UNSIGNED AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255) NOT NULL, surname VARCHAR(255) NOT NULL, email VARCHAR(255) NOT NULL UNIQUE);";
 			if (mysqli_query($conn, $creat_table_sql)) {
 			    fwrite(STDOUT, "users table created Successfully\n");
+			    die();
 			} else {
 			    echo "Error: Could not create table:\n".mysqli_error($conn). "\n";
+			    die();
 			}
 		}
 	}
 }
 else{
+	// not all database information was provided
 	fwrite(STDOUT, "Please provide database credentials, type --help for more information\n");
 	die();
 }
 
+// if csv file was not given as an option print error then stop script.
 if(!$csv_file){
 	fwrite(STDOUT, "Please provide a csv file with option --file\n");
 	die();
@@ -152,16 +163,19 @@ if ($csv_file){
 		}
 	}
 	catch(Exception $e){
+		// display error then stop script.
 		print("An error occured opening the csv file. Please the check file or the file location.");
+		die();
 	}
 	
 }
-// Check if users contains any data
+// Check if dry run was stated.
 if ($dry_run){
 	fwrite(STDOUT, "Performing dry run\n");
 	die();
 }
 else{
+	//else carry on with script. check if $users contains data.
 	if($users){
 		//Create db connection
 		$conn = mysqli_connect($h, $u, $p, 'danielgibbs');
@@ -180,17 +194,18 @@ else{
 				//escape email address after filter but before inserting
 				$users[$i][2] = mysqli_real_escape_string($conn, $users[$i][2]);
 				// check for database credentials.
-				if($u && $p && $h){				
+				if($u && $p && $h){	
+					// insert current csv line into users table			
 					$sql = "INSERT INTO users (name, surname, email) VALUES('".$users[$i][0]."','".$users[$i][1]."','".$users[$i][2]."')";
 					if (mysqli_query($conn, $sql)) {
 					    echo "Line ". $i ." in csv file: Successfully inserted\n";
 					} else {
-					    echo "Error: " . $sql . "\n" . mysqli_error($conn) . "\n";
+					    echo "Line ". $i ." in csv file: " . $sql . "\n" . mysqli_error($conn) . "\n";
 					}
 				}
 			} else {
+				// email address is not valid
 				echo "Line ".$i." in csv file: email is not valid\n";
-			  //fwrite(STDOUT, "line ".(string)$i+1." of csv file: not a valid email");
 			}
 		}
 	}
