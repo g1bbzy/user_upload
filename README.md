@@ -1,6 +1,7 @@
 # user_upload
 
-A command line php script that uploads user information from a .CSV file to a mysql database. 
+A command line php script that uploads user information from a .CSV file to a mysql database.
+The script will create a database called danielgibbs
 
 Prerequisites:
 

@@ -34,7 +34,6 @@ and recreate it (no further action will take place).
 // Loop through Args. Start at position 1 because position 0 is location/name of php file.
 if(count($argv) > 1){
 	for ($i=1; $i < count($argv); $i++) { 
-		// 
 		if ($argv[$i] == "--file"){
 			if (isset($argv[$i+1])) {
 			    $csv_file = $argv[$i+1];
@@ -108,7 +107,7 @@ if($u && $p && $h){
 		if($val !== FALSE)
 		{
 			// Query to create table
-			$creat_table_sql = "CREATE TABLE users (id INT(6) UNSIGNED AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255) NOT NULL, surname VARCHAR(255) NOT NULL, email VARCHAR(255) NOT NULL UNIQUE);";
+			$create_table_sql = "CREATE TABLE users (id INT(6) UNSIGNED AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255) NOT NULL, surname VARCHAR(255) NOT NULL, email VARCHAR(255) NOT NULL UNIQUE);";
 			//Drop table as it already exists
 			if (mysqli_query($conn, "DROP TABLE IF EXISTS danielgibbs.users;")) {
 			    fwrite(STDOUT, "users table has been dropped\n");
@@ -117,7 +116,7 @@ if($u && $p && $h){
 			    die();
 			}
 			// create table again
-			if (mysqli_query($conn, $creat_table_sql)) {
+			if (mysqli_query($conn, $create_table_sql)) {
 			    fwrite(STDOUT, "users table created successfully\n");
 			    die();
 			} else {
@@ -127,8 +126,8 @@ if($u && $p && $h){
 		else
 		{
 			// table does not exists so create it
-		    $creat_table_sql = "CREATE TABLE users (id INT(6) UNSIGNED AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255) NOT NULL, surname VARCHAR(255) NOT NULL, email VARCHAR(255) NOT NULL UNIQUE);";
-			if (mysqli_query($conn, $creat_table_sql)) {
+		    $create_table_sql = "CREATE TABLE users (id INT(6) UNSIGNED AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255) NOT NULL, surname VARCHAR(255) NOT NULL, email VARCHAR(255) NOT NULL UNIQUE);";
+			if (mysqli_query($conn, $create_table_sql)) {
 			    fwrite(STDOUT, "users table created Successfully\n");
 			    die();
 			} else {
@@ -198,8 +197,10 @@ else{
 					// insert current csv line into users table			
 					$sql = "INSERT INTO users (name, surname, email) VALUES('".$users[$i][0]."','".$users[$i][1]."','".$users[$i][2]."')";
 					if (mysqli_query($conn, $sql)) {
+						// if insert was successfull
 					    echo "Line ". $i ." in csv file: Successfully inserted\n";
 					} else {
+						// if an error occured
 					    echo "Line ". $i ." in csv file: " . $sql . "\n" . mysqli_error($conn) . "\n";
 					}
 				}
