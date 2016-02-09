@@ -14,7 +14,7 @@ Command line options:
 
 --dry_run - Used to execute this script but not insert users into the database.
 
---create_table - This option is creates the users table. If table already exists it will drop the table
+--create_table - This option creates the users table. If table already exists it will drop the table
 and recreate it (no further action will take place).
 
 -u - Username for database connection.
