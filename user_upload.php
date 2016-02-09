@@ -2,25 +2,34 @@
 //Global variables
 $csv_file = "";
 $create_table = false;
-$creat_table_sql = "DROP TABLE IF EXISTS `users`; CREATE TABLE users (id INT(6) UNSIGNED AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255) NOT NULL, surname VARCHAR(255) NOT NULL, email VARCHAR(255) NOT NULL UNIQUE);";
 $dry_run = false;
 $u = "";
 $p = "";
 $h = "";
 $db = "";
 $users = [];
-$dbconnection = false;
+
 // --help output
 $help = "
-User Upload Help
-This is script is used to upload user information from a csv file to a mysql database.
+****  User Upload Help  ****
+
+This is a php script that uploads user's information from a csv file to a mysql database.
+When using this script, make sure your database user has sufficient permissions.
+
 Command line options:
---file -
---dry_run -
---creat_table -
--u -
--p - 
--h -
+
+--file - The csv file location. e.g 'c:\users.csv'
+
+--dry_run - Used to execute this script but not insert users into the database.
+
+--create_table - This option is creates the users table. If table already exists it will drop the table
+and recreate it.
+
+-u - Username for database connection.
+
+-p - Password for database connection.
+
+-h - Host location of the database. e.g localhost.
 ";
 
 // Loop through Args. Start at position 1 because position 0 is location/name of php file.
@@ -69,24 +78,55 @@ else
 {
 	// no arguments were provided
 	fwrite(STDOUT, "Please provide appropriate command line options\n");
+	die();
 }
 // check if credentials and db host were provided
-if($u && $p && $h && $db){
+if($u && $p && $h){
+	$conn = mysqli_connect($h, $u, $p);
+	// Check connection
+	if (!$conn) {
+	    die("Connection failed: " . mysqli_connect_error());
+	}
+	if (mysqli_query($conn, "CREATE DATABASE IF NOT EXISTS danielgibbs;")) {
+	    fwrite(STDOUT, "database exists or has been created.\n");
+	} else {
+	    echo "Error: database not created:\n".mysqli_error($conn). "\n";
+	    die();
+	}
+
 	// Create connection
-	$conn = mysqli_connect($h, $u, $p, $db);
+	$conn = mysqli_connect($h, $u, $p, 'danielgibbs');
 	// Check connection
 	if (!$conn) {
 	    die("Connection failed: " . mysqli_connect_error());
 	}
 	echo "**** Connected to database ****\n\n";
-	$dbconnection = true;
-	if (mysqli_query($conn, $creat_table_sql)) {
-	    fwrite(STDOUT, "users table created Successfully\n");
-	} else {
-	    echo "Error: Could not create table:\n".mysqli_error($conn). "\n";
-	}
+
 	if ($create_table){
-		$conn->query();
+		$val = mysqli_query($conn,"select 1 from `users` LIMIT 1");
+		if($val !== FALSE)
+		{
+			$creat_table_sql = "CREATE TABLE users (id INT(6) UNSIGNED AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255) NOT NULL, surname VARCHAR(255) NOT NULL, email VARCHAR(255) NOT NULL UNIQUE);";
+			if (mysqli_query($conn, "DROP TABLE IF EXISTS ".$db.".users;")) {
+			    fwrite(STDOUT, "users table has been dropped\n");
+			} else {
+			    echo "Error: Could not drop table:\n".mysqli_error($conn). "\n";
+			}
+			if (mysqli_query($conn, $creat_table_sql)) {
+			    fwrite(STDOUT, "users table created successfully\n");
+			} else {
+			    echo "Error: Could not create table:\n".mysqli_error($conn). "\n";
+			}
+		}
+		else
+		{
+		    $creat_table_sql = "CREATE TABLE users (id INT(6) UNSIGNED AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255) NOT NULL, surname VARCHAR(255) NOT NULL, email VARCHAR(255) NOT NULL UNIQUE);";
+			if (mysqli_query($conn, $creat_table_sql)) {
+			    fwrite(STDOUT, "users table created Successfully\n");
+			} else {
+			    echo "Error: Could not create table:\n".mysqli_error($conn). "\n";
+			}
+		}
 	}
 }
 else{
@@ -117,37 +157,42 @@ if ($csv_file){
 	
 }
 // Check if users contains any data
-if($users){
-	//Create db connection
-	$conn = mysqli_connect($h, $u, $p, $db);
-	// Check connection
-	if (!$conn) {
-	    die("Connection failed: " . mysqli_connect_error());
-	}
-	//loop through users array. Start at position 1 as 0 is column names.
-	for ($i=1; $i < count($users); $i++) {
-		// Convert first and last name to uppercase. 
-		$users[$i][0] = mysqli_real_escape_string($conn, strtoupper($users[$i][0]));
-		$users[$i][1] = mysqli_real_escape_string($conn, strtoupper($users[$i][1]));
-		// sanitise email address and convert to lowercase.
-		$users[$i][2] = filter_var(mb_strtolower($users[$i][2]), FILTER_SANITIZE_EMAIL);
-		if (!filter_var($users[$i][2], FILTER_VALIDATE_EMAIL) === false) {
-			//escape email address after filter but before inserting
-			$users[$i][2] = mysqli_real_escape_string($conn, $users[$i][2]);
-			// check for database credentials.
-			if($u && $p && $h && $db){				
-				$sql = "INSERT INTO users (name, surname, email) VALUES('".$users[$i][0]."','".$users[$i][1]."','".$users[$i][2]."')";
-				if (mysqli_query($conn, $sql)) {
-				    echo "Line ". $i ." in csv file: Successfully inserted\n";
-				} else {
-				    echo "Error: " . $sql . "\n" . mysqli_error($conn) . "\n";
+if ($dry_run){
+	fwrite(STDOUT, "Performing dry run\n");
+	die();
+}
+else{
+	if($users){
+		//Create db connection
+		$conn = mysqli_connect($h, $u, $p, 'danielgibbs');
+		// Check connection
+		if (!$conn) {
+		    die("Connection failed: " . mysqli_connect_error());
+		}
+		//loop through users array. Start at position 1 as 0 is column names.
+		for ($i=1; $i < count($users); $i++) {
+			// Convert first and last name to uppercase. 
+			$users[$i][0] = mysqli_real_escape_string($conn, strtoupper($users[$i][0]));
+			$users[$i][1] = mysqli_real_escape_string($conn, strtoupper($users[$i][1]));
+			// sanitise email address and convert to lowercase.
+			$users[$i][2] = filter_var(mb_strtolower($users[$i][2]), FILTER_SANITIZE_EMAIL);
+			if (!filter_var($users[$i][2], FILTER_VALIDATE_EMAIL) === false) {
+				//escape email address after filter but before inserting
+				$users[$i][2] = mysqli_real_escape_string($conn, $users[$i][2]);
+				// check for database credentials.
+				if($u && $p && $h){				
+					$sql = "INSERT INTO users (name, surname, email) VALUES('".$users[$i][0]."','".$users[$i][1]."','".$users[$i][2]."')";
+					if (mysqli_query($conn, $sql)) {
+					    echo "Line ". $i ." in csv file: Successfully inserted\n";
+					} else {
+					    echo "Error: " . $sql . "\n" . mysqli_error($conn) . "\n";
+					}
 				}
+			} else {
+				echo "Line ".$i." in csv file: email is not valid\n";
+			  //fwrite(STDOUT, "line ".(string)$i+1." of csv file: not a valid email");
 			}
-		} else {
-			echo "Line ".$i." in csv file: email is not valid\n";
-		  //fwrite(STDOUT, "line ".(string)$i+1." of csv file: not a valid email");
 		}
 	}
 }
-
 ?>
